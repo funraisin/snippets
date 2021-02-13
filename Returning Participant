@@ -1,0 +1,72 @@
+<?php
+## A common method used to automatically particially login a past participant 
+## and add them to a specific new event / flow and then have them land on that
+## flow to complete their entry
+
+if(isset($_GET["ref"]) && $_GET["ref"]!="") {
+    $newgroup_id=23;
+    $newevent_id=2;
+    $ci =& get_instance();
+    if($MemberDetails=MySQLArray("SELECT * FROM members WHERE member_hash=".$ci->db->escape($_GET["ref"]))) {
+        $data["SetupDetails"]=PlatformSetup();
+        $data["EventDetails"]=MYSQLArray("SELECT * FROM events WHERE event_id=$newevent_id");
+        $data["MemberDetails"]=$MemberDetails;
+        $ci->db->query("DELETE FROM members_history WHERE member_id='".intval($MemberDetails["member_id"])."' AND is_complete!='Y' AND event_id=$newevent_id");
+        $ConfKey=md5(microtime());
+        
+        $ci->db->query("INSERT INTO lk_transactions (transaction_type,transaction_date) VALUES ('registration',now())");
+		    $transaction_id=$ci->db->insert_id();
+		    if($data["EventDetails"]["st_prefix_registration"]!="") {
+			    $PoNum=$data["EventDetails"]["st_prefix_registration"].$transaction_id;
+		    }
+		    else {
+			    $PoNum=$data["SetupDetails"]["prefix_registration"].$transaction_id;
+		    }
+		
+		    $data["FormGroupDetails"]=MySQLArray("SELECT * FROM events_forms_groups WHERE group_id='".$newgroup_id."'");
+		
+		    $FD2=Array(
+			    "member_type" => $data["FormGroupDetails"]["group_type"],
+			    "history_type" => $data["EventDetails"]["event_type"],
+			    "member_id" => $data["MemberDetails"]["member_id"],
+			    "history_type" => $data["EventDetails"]["event_type"],
+			    "group_id" => $newgroup_id,
+			    "event_id" => $data["EventDetails"]["event_id"],
+			    "done_personaldetails" => "Y",
+			    "po_number" => $PoNum,
+			    "m_target" => preg_replace("[^0-9.]","",$data["EventDetails"]["st_target_member"]),
+			    "m_comments" => addslashes($data["EventDetails"]["event_fundraising_message"]),
+			    "m_page_title" => addslashes($data["EventDetails"]["st_title_member"]),
+			    "conf_key{insert}" => $ConfKey,
+			    "last_updated" => date("Y-m-d H:i:s"),
+			    "date_created{insert}" => date("Y-m-d H:i:s")
+		    );
+		
+		  $ci->db->query(MySQLInsert($FD2,"members_history"));
+		  $history_id=$ci->db->insert_id();
+		  $ci->session->set_userdata(array("regsession_history_id"=>$history_id));
+		
+		  ## do blog
+		  $data["SetupDetails"]["event_fundraising_message"]=($data["EventDetails"]["event_fundraising_message"]!='')?$data["EventDetails"]["event_fundraising_message"]:$data["SetupDetails"]["event_fundraising_message"];
+		  $data["SetupDetails"]["st_title_member"]=($data["EventDetails"]["st_title_member"]!='')?$data["EventDetails"]["st_title_member"]:$data["SetupDetails"]["st_title_member"];
+		  $data["SetupDetails"]["event_blog_message"]=($data["EventDetails"]["event_blog_message"]!='')?$data["EventDetails"]["event_blog_message"]:$data["SetupDetails"]["event_blog_message"];
+		
+		  $FD3=Array(
+			  "member_id" => $data["MemberDetails"]["member_id"],
+			  "history_id" => $history_id,
+			  "event_id" => $data["EventDetails"]["event_id"],
+			  "blog_title" => addslashes($data["SetupDetails"]["st_title_member"]),
+			  "blog_key" => md5(microtime()),
+			  "blog_content" => addslashes($data["SetupDetails"]["event_fundraising_message"]),
+			  "is_default" => "Y",
+			  "date_created{insert}" => date("Y-m-d H:i:s")
+		  );
+		  $ci->db->query(MySQLInsert($FD3,"members_blogs"));
+		
+		  $ci->session->set_userdata(array("regsession_member_id"=>$data["MemberDetails"]["member_id"]));
+		  $ci->session->set_userdata(array("regsession_event_id"=>$data["EventDetails"]["event_id"]));
+		
+		  redirect("/register/".$data["EventDetails"]["event_key"]."/".$data["FormGroupDetails"]["form_url"]);
+    }
+}
+?>
