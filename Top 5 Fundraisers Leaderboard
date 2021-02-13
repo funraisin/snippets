@@ -1,0 +1,82 @@
+<?php
+## standard leaderboard top 5 example embedded in a dashboard
+
+$CI =& get_instance();
+if(! $leaderboard = $ci->get('unique_leaderboard_name')) {
+  $query=$ci->db->query(""SELECT SUM(d_amount - d_refund_amount) as SubT,a.member_id,a.m_name_alt,a.m_fname,a.m_lname,a.m_lname_prefix,a.m_username,a.m_company,b.history_id,b.event_id,c.event_name,c.event_key,a.m_photo,b.m_target,b.m_event_photo,c.event_default_image,c.event_type,c.created_member_id,b.m_page_title 
+					FROM members AS a 
+					LEFT JOIN members_history AS b ON a.member_id=b.member_id 
+					LEFT JOIN events AS c ON b.event_id=c.event_id 
+					LEFT JOIN donations AS e ON b.history_id=e.history_id 
+					WHERE a.m_status='1' AND b.is_fundraising='Y' AND b.is_active='Y' AND e.d_status='paid' 
+					GROUP BY b.member_id 
+					ORDER BY SubT DESC,b.member_id ASC LIMIT 5");
+  if($query->num_rows()>0) {
+    $x = 0;$ldata=array();
+    foreach($query->result() as $row) {
+      $ldata["leaderboard"][$x]["name"]       = (isset($row->m_name_alt) && $row->m_name_alt!="")?stripslashes($row->m_name_alt):stripslashes($row->m_fname.' '.$row->m_lname);
+			$ldata["leaderboard"][$x]["company"]       =stripslashes($row->m_company);
+			$ldata["leaderboard"][$x]["fname"]		 =stripslashes($row->m_fname);
+			$ldata["leaderboard"][$x]["lname"]		 =stripslashes($row->m_lname);
+			$ldata["leaderboard"][$x]["url"]        =stripslashes($row->m_username.'/'.$row->event_key);
+			$ldata["leaderboard"][$x]["raised"]     =number_format_detect($row->SubT,$SetupDetails,0);
+			$ldata["leaderboard"][$x]["raised_unformatted"]     =$row->SubT;
+			$ldata["leaderboard"][$x]["target"]     =stripslashes($row->m_target);
+			$ldata["leaderboard"][$x]["photo"]      = $photo;//added in a second photo
+			$ldata["leaderboard"][$x]["event_name"] =stripslashes($row->event_name);
+			$ldata["leaderboard"][$x]["event_type"] =stripslashes($row->event_type);
+			$ldata["leaderboard"][$x]["m_page_title"] =stripslashes($row->m_page_title);
+			$ldata["leaderboard"][$x]["created_member_id"] =$row->created_member_id;
+			$ldata["leaderboard"][$x]["event_id"] =stripslashes($row->event_id);
+			$ldata["leaderboard"][$x]["member_id"] =stripslashes($row->member_id);
+			$ldata["leaderboard"][$x]["history_id"] =stripslashes($row->history_id);
+			$ldata["leaderboard"][$x]["blog"]		= MySQLResult("SELECT blog_content FROM members_blogs WHERE history_id='".$row->history_id."' ORDER BY date_created DESC LIMIT 1","blog_content");
+			$x++;
+    }
+    $ci->save('unique_leaderboard_name', $ldata, 3600);// 1 hour
+    $leaderboard = $ldata;
+  }
+}
+
+?>
+<section class="section">
+  <div id="Leaderboard" class="section-inner">
+    <?php foreach($leaderboard["leaderboard"] as $key=>$row) { ?>
+    <div class="leaderboardrow" data-amountraised="<?=isset($row['raised_unformatted'])?$row['raised_unformatted']:'';?>">
+      <span class="rank bg-primary"><?=($key) + 1;?></span>
+      <a href="/fundraisers/<?=$row['url'];?>" aria-label="<?=(isset($row["event_type"]) && $row["event_type"]=='diy')?stripslashes($row['m_page_title']) . ' ' . GetTranslation('diy_by','By') . ' ' . stripslashes(ucwords(strtolower($row['name']))):$row['name'];?>">
+        <div class="profileimage text-center">
+          <?php if(isset($row['photo']) && $row['photo']!='') { ?>
+							<img src="<?=$row['photo'];?>" alt="" class="width-100 profile-image" alt="<?=$row['name'];?>"/>
+					<?php } else if(isset($SetupDetails["event_default_image"]) && $SetupDetails["event_default_image"]!="") { ?>
+						  <img src="<?=$SetupDetails["event_default_image"];?>" alt="<?=$row['name'];?>" class="width-100 profile-image" />
+					<?php } ?>
+        </div>
+        <div class="profilename">
+          <?php if(isset($row["event_type"]) && $row["event_type"]=='diy') { ?>
+							<?php if(isset($row["created_member_id"]) && $row["created_member_id"]==$row["member_id"]) { ?>
+								<h4>
+									<span class="fundraiser-name"><?=$row['m_page_title'];?></span>
+								</h4>
+								<p><?=GetTranslation('diy_by','By');?> <?=$row['name'];?></p>
+							<?php } else { ?>
+								<h4>
+									<span class="fundraiser-name"><?=$row['name'];?></span>
+								</h4>
+								<p><?=GetTranslation('taking_part_in','Taking part in');?> <?=$row['m_page_title'];?></p>
+							<?php } ?>
+						<?php } else { ?>
+						<h4>
+							<span class="fundraiser-name"><?=$row['name'];?></span>
+						</h4>
+				<?php } ?>
+        </div>
+        <div class="raised">
+          <p class="mb0"><?=GetTranslation('raised_label','Raised');?></p>
+          <h3 class="color-primary mt0"><span class="currency"><?=(isset($lump_currency))?displayCurrencyCharacter($lump_currency):displayCurrencyCharacter($SetupDetails["platform_currency"]);?></span><?=$row['raised'];?></h3>
+        </div>  
+      </a>
+    </div>
+    <?php } ?>
+  </div>
+</section>
