@@ -1,0 +1,63 @@
+Individual profile pages (add to profile.php at the bottom):
+
+<section class="content section member-info hidden">
+                <div class="container">
+                    <p>Member id: <b><span class="member_id"><?php echo($MemberDetails["member_id"]) ?></span></b></p>
+                    <p>History id: <b><span class="history_id"><?php echo($MemberDetails["history_id"]) ?></span></b></p>
+                    <p>Team id: <b><span class="team_id"><?php echo($TeamDetails["team_id"]) ?></span></b></p>
+                    <p>Secure URL: <b><span class="secure_url"><?=SECUREURL;?></span></b></p>
+                    <p>Member username: <b><span class="member_username"><?=$MemberDetails["m_username"];?></span></b></p>
+                    <p>Event key: <b><span class="event_key"><?=$EventDetails["event_key"];?></span></b></p>
+                    
+                    <p>Profile page URL: <b><span class="profile_url"><?=SECUREURL;?>fundraisers/<?=$MemberDetails["m_username"];?>/<?=$EventDetails["event_key"];?></span></b></p>
+                </div>
+            </section>
+            
+            <script>
+            $(document).ready(function(){
+                var member_id = $('.member_id').html();
+                var history_id = $('.history_id').html();
+                
+                var secure_url = $('.secure_url').html();
+                var member_username = $('.member_username').html();
+                var event_key = $('.event_key').html();
+                
+                var whatsapp_url = 'https://api.whatsapp.com/send?text=' + secure_url + '%2Ffundraisers%2F' + member_username + '%2F' + event_key;
+                
+                var link = '<a href="' + whatsapp_url + '" class="share-whatsapp btn-whatsapp btn-social" aria-label="Share via Whatsapp" target="_blank"><i class="fa fa-whatsapp" aria-hidden="true"></i></a>';
+                
+                if ( $('.share-page-icons .btn').length > 0 ) {
+                    $('.share-page-icons .btn').before(link);
+                } else {
+                    $('.share-page-icons').append(link);
+                }
+                
+                console.log('whatsapp_url: ' + whatsapp_url);
+            });
+            </script>
+
+
+Team profile pages (add to profile_team.php at the bottom):
+
+<section class="content section member-info hidden">
+                <div class="container">
+                    <p>Member id: <b><span class="member_id"><?php echo($MemberDetails["member_id"]) ?></span></b></p>
+                    <p>History id: <b><span class="history_id"><?php echo($MemberDetails["history_id"]) ?></span></b></p>
+                    <p>Team id: <b><span class="team_id"><?php echo($TeamDetails["team_id"]) ?></span></b></p>
+                    <p>Secure URL: <b><span class="secure_url"><?=SECUREURL;?></span></b></p>
+                    <p>Member username: <b><span class="member_username"><?=$MemberDetails["m_username"];?></span></b></p>
+                    <p>Event key: <b><span class="event_key"><?=$EventDetails["event_key"];?></span></b></p>
+                </div>
+            </section>
+            
+            <script>
+            $(document).ready(function(){
+                var team_id = $('.team_id').html();
+                var history_id = $('.history_id').html();
+                var whatsapp_url = 'https://api.whatsapp.com/send?text=' + secure_url + '%2F' + team_id + '%2Fw';
+                
+                $('.share-page-icons .btn-primary').before('<a href="javascript:;" class="share-whatsapp btn-whatsapp btn-social" aria-label="Share via Whatsapp"><i class="fa fa-whatsapp" aria-hidden="true"></i></a>');
+                $('.share-whatsapp').attr('href', whatsapp_url);
+                $('.share-whatsapp').attr('target', '_blank');
+            });
+            </script>
