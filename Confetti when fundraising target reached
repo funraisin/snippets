@@ -1,0 +1,72 @@
+<!--In footer.php theme:-->
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@0.2.0/dist/confetti.browser.min.js"></script>
+
+<!--In profile.php theme:-->
+
+<?php
+    $donationTarget = ($MemberDetails["m_target"]>0)?$MemberDetails["m_target"]:$EventDetails["default_target"];
+?>
+<?php if($DonationsTotal > $donationTarget) { ?>
+    <script>
+        $(document).ready(function(){
+
+            var end = Date.now() + 3000;
+            var maininteral = setInterval(function() {
+                if (Date.now() > end) {
+                    $('.myGoal').addClass('beatHeart');
+                    return clearInterval(maininteral);
+
+                } else {
+
+                }
+
+                var interval = setInterval(function() {
+                    if (Date.now() > end) {
+                        $('.myGoal').addClass('beatHeart');
+                        return clearInterval(interval);
+
+
+                    } else {
+
+                    }
+                    confetti({
+                        startVelocity: 30,
+                        spread: 360,
+                        ticks: 150,
+                        origin: {
+                            x: Math.random(),
+                            // since they fall down, start a bit higher than random
+                            y: Math.random() - 0.2
+                        },
+                        colors: ['#fff','#ff437e']
+                    });
+                }, 500); 
+
+            }, 500);   
+        });
+    </script>
+<?php } ?>
+
+<style>
+.beatHeart {
+    animation: .8s beatHeart;
+}
+
+@keyframes beatHeart {
+    0% {
+        transform: scale(1);
+    }
+    25% {
+        transform: scale(1.2);
+    }
+    50% {
+        transform: scale(1.5);
+    }
+    75% {
+        transform: scale(1.2);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+</style>
