@@ -1,0 +1,77 @@
+<?php
+
+/*
+  2 functions that allow you to generate a custom QR code that links to a team or individual's fundraising page.
+  
+  use it with <img src="https://domain.com/customcode/generateteamdonateqrcode/123" />
+  
+*/
+
+public function generateteamdonateqrcode($team_id=0,$size=5,$ext='.png') {
+		if($team_id > 0) {
+			
+			if($data["TeamDetails"]=MySQLArray("SELECT * FROM teams AS a, members_history AS b, events AS c WHERE a.team_id=b.team_id AND b.event_id=c.event_id AND b.team_id='".intval($team_id)."'")) {
+				
+				$SetupDetails=PlatformSetup();
+				$filename = TEMP_UPLOADS.$team_id.'-team-donate-qrcode.png';
+				
+					$this->load->library('ciqrcode');
+					$params['data'] = SECUREURL.'fundraisers/'.$data["TeamDetails"]["t_url"] . '/?utm_source=qr&utm_medium=print&utm_campaign=nsw_tld_2020&utm_content=dmtld2021__team';
+					$params['size'] = $size;
+					$params['savename'] = TEMP_UPLOADS.$team_id.'-team-donate-qrcode.png';
+					$this->ciqrcode->generate($params);
+					
+					if(isset($SetupDetails["platform_server"]) && $SetupDetails["platform_server"] == 'aws') {
+						require_once(APPPATH."libraries/S3/S3.php");
+						$s3 = new S3(S3_KEY, S3_SECRET);
+						if ($s3->putObjectFile(TEMP_UPLOADS.$team_id.'-team-donate-qrcode.png', CLOUD_FILES_NAME, $team_id.'-team-donate-qrcode.png', S3::ACL_PUBLIC_READ)) {
+							header("location: ".USER_UPLOADS_NICE.$team_id.'-team-donate-qrcode.png');
+							exit;
+						}
+					}
+					else {
+						$this->load->library('opencloud');
+						$this->opencloud->set_container(CLOUD_FILES_NAME);
+					}
+				
+				exit;
+			}
+		}
+	}
+  
+  public function generatememberdonateqrcode($history_id=0,$size=5,$ext='.png') {
+		if($history_id > 0) {
+			
+			if($data["MemberDetails"]=MySQLArray("SELECT * FROM members AS a, members_history AS b, events AS c WHERE a.member_id=b.member_id AND b.event_id=c.event_id AND b.history_id='".intval($history_id)."'")) {
+				
+				$SetupDetails=PlatformSetup();
+				$filename = TEMP_UPLOADS.$history_id.'-member-donate-qrcode.png';
+				
+          $this->load->library('ciqrcode');
+					$params['data'] = SECUREURL.'fundraisers/' . $data["MemberDetails"]["m_username"] . '/' . $data["MemberDetails"]["event_key"] . '?utm_source=qr&utm_medium=print&utm_campaign=nsw_tld_2020&utm_content=dmtld2021__individual';
+					$params['size'] = $size;
+					$params['savename'] = TEMP_UPLOADS.$history_id.'-member-donate-qrcode.png';
+					$this->ciqrcode->generate($params);
+					
+					if(isset($SetupDetails["platform_server"]) && $SetupDetails["platform_server"] == 'aws') {
+						require_once(APPPATH."libraries/S3/S3.php");
+						$s3 = new S3(S3_KEY, S3_SECRET);
+						if ($s3->putObjectFile(TEMP_UPLOADS.$history_id.'-member-donate-qrcode.png', CLOUD_FILES_NAME, $history_id.'-member-donate-qrcode.png', S3::ACL_PUBLIC_READ)) {
+							header("location: ".USER_UPLOADS_NICE.$history_id.'-member-donate-qrcode.png');
+							exit;
+						}
+					}
+					else {
+						$this->load->library('opencloud');
+						$this->opencloud->set_container(CLOUD_FILES_NAME);
+					}
+
+				
+				exit;
+			}
+		}
+	}
+  
+  
+
+?>
